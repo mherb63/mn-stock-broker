@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.micronaut.http.HttpRequest.GET;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @MicronautTest
 @Slf4j
@@ -32,16 +33,26 @@ class QuotesControllerTest {
 
     @Test
     void testGetQuote() {
-        store.update(Quote.builder()
-                .symbol(new Symbol("APPL"))
-                .bid(randomValue())
+        final Quote apple = generateQuote("APPL");
+        store.update(apple);
+        final Quote amazon = generateQuote("AMZN");
+        store.update(amazon);
+
+        final Quote appleResult = client.toBlocking().retrieve(GET("/quotes/APPL"), Quote.class);
+        log.info("Result: {}", appleResult);
+        assertThat(apple).usingRecursiveComparison().isEqualTo(appleResult);
+
+        final Quote amazonResult = client.toBlocking().retrieve(GET("/quotes/AMZN"), Quote.class);
+        log.info("Result: {}", amazonResult);
+        assertThat(amazon).usingRecursiveComparison().isEqualTo(amazonResult);
+    }
+
+    public Quote generateQuote(final String symbol) {
+        return Quote.builder().symbol(new Symbol(symbol)).bid(randomValue())
                 .ask(randomValue())
                 .lastPrice(randomValue())
                 .volume(randomValue())
-                .build());
-
-        final Quote quote = client.toBlocking().retrieve(GET("/quotes/APPL"), Quote.class);
-        log.debug("Quote: " + quote);
+                .build();
     }
 
     private BigDecimal randomValue() {
