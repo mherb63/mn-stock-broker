@@ -1,0 +1,14 @@
+micronaut:
+  application:
+    name: mnStockBroker
+  server:
+    port: 8585
+hello:
+  controller:
+    path: "/hello"
+  service:
+    greeting: "Hello from HelloWorldService"
+  config:
+    greeting:
+      de: "Hallo"
+      en: "Hello"
