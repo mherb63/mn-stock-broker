@@ -4,11 +4,12 @@ import com.mherb.mnaut.controller.WatchListReactiveController;
 import com.mherb.mnaut.domain.InMemoryAccountStore;
 import com.mherb.mnaut.domain.Symbol;
 import com.mherb.mnaut.domain.WatchList;
+import com.mherb.mnaut.security.JwtWatchListClient;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.client.annotation.Client;
-import io.micronaut.runtime.EmbeddedApplication;
-import io.micronaut.rxjava2.http.client.RxHttpClient;
+import io.micronaut.security.authentication.UsernamePasswordCredentials;
+import io.micronaut.security.token.jwt.render.BearerAccessRefreshToken;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import io.reactivex.Single;
 import jakarta.inject.Inject;
@@ -20,7 +21,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.micronaut.http.HttpRequest.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @MicronautTest
@@ -30,65 +30,77 @@ class WatchListReactiveControllerTest {
     private static final UUID TEST_ACCOUNT_ID = WatchListReactiveController.ACCOUNT_ID;
 
     @Inject
-    EmbeddedApplication<?> application;
+    @Client("/")
+    JwtWatchListClient client;
 
     @Inject
     InMemoryAccountStore store;
 
-    @Inject
-    @Client("/")
-    RxHttpClient client;
-
     @Test
-    void testEmptyWatchListForAccount() {
-        Single<WatchList> response = client.retrieve(GET("/account/watchlist-reactive"), WatchList.class).singleOrError();
-
-        assertTrue(response.blockingGet().getSymbols().isEmpty());
+    void returnsEmptyWatchListForAccount() {
+        final Single<WatchList> result = client.retrieveWatchList(getAuthorizationHeader()).singleOrError();
+        assertTrue(result.blockingGet().getSymbols().isEmpty());
         assertTrue(store.getWatchList(TEST_ACCOUNT_ID).getSymbols().isEmpty());
-        log.debug("response: " + response);
     }
 
     @Test
-    void testGetWatchListForAccount() {
-        List<Symbol> symbols = Stream.of("AAPL", "AMZN", "NFLX").map(Symbol::new).collect(Collectors.toList());
+    void returnsWatchListForAccount() {
+        final List<Symbol> symbols = Stream.of("APPL", "AMZN", "NFLX")
+                .map(Symbol::new)
+                .collect(Collectors.toList());
         WatchList watchList = new WatchList(symbols);
         store.updateWatchList(TEST_ACCOUNT_ID, watchList);
 
-        WatchList response = client.toBlocking().retrieve("/account/watchlist-reactive", WatchList.class);
-        assertEquals(3, response.getSymbols().size());
+        var result = client.retrieveWatchList(getAuthorizationHeader()).singleOrError().blockingGet();
+        assertEquals(3, result.getSymbols().size());
         assertEquals(3, store.getWatchList(TEST_ACCOUNT_ID).getSymbols().size());
     }
 
     @Test
-    void testGetWatchListForAccountAsSingle() {
-        List<Symbol> symbols = Stream.of("AAPL", "AMZN", "NFLX").map(Symbol::new).collect(Collectors.toList());
+    void returnsWatchListForAccountAsSingle() {
+        final List<Symbol> symbols = Stream.of("APPL", "AMZN", "NFLX")
+                .map(Symbol::new)
+                .collect(Collectors.toList());
         WatchList watchList = new WatchList(symbols);
         store.updateWatchList(TEST_ACCOUNT_ID, watchList);
 
-        WatchList response = client.toBlocking().retrieve("/account/watchlist-reactive/single", WatchList.class);
-        assertEquals(3, response.getSymbols().size());
+        final WatchList result = client.retrieveWatchListAsSingle(getAuthorizationHeader()).blockingGet();
+        assertEquals(3, result.getSymbols().size());
         assertEquals(3, store.getWatchList(TEST_ACCOUNT_ID).getSymbols().size());
     }
 
     @Test
-    void testUpdateWatchListForAccount() {
-        List<Symbol> symbols = Stream.of("AAPL", "AMZN", "NFLX").map(Symbol::new).collect(Collectors.toList());
+    void canUpdateWatchListForAccount() {
+        final List<Symbol> symbols = Stream.of("APPL", "AMZN", "NFLX")
+                .map(Symbol::new)
+                .collect(Collectors.toList());
         WatchList watchList = new WatchList(symbols);
 
-        HttpResponse<Object> response = client.toBlocking().exchange(PUT("/account/watchlist-reactive", watchList));
-        assertEquals(HttpStatus.OK, response.getStatus());
+        final HttpResponse<Object> added = client.updateWatchList(getAuthorizationHeader(), watchList);
+        assertEquals(HttpStatus.OK, added.getStatus());
         assertEquals(watchList, store.getWatchList(TEST_ACCOUNT_ID));
     }
 
     @Test
-    void testDeleteWatchListForAccount() {
-        List<Symbol> symbols = Stream.of("AAPL", "AMZN", "NFLX").map(Symbol::new).collect(Collectors.toList());
+    void canDeleteWatchListForAccount() {
+        final List<Symbol> symbols = Stream.of("APPL", "AMZN", "NFLX")
+                .map(Symbol::new)
+                .collect(Collectors.toList());
         WatchList watchList = new WatchList(symbols);
         store.updateWatchList(TEST_ACCOUNT_ID, watchList);
         assertFalse(store.getWatchList(TEST_ACCOUNT_ID).getSymbols().isEmpty());
 
-        HttpResponse<Object> response = client.toBlocking().exchange(DELETE("/account/watchlist-reactive/" + TEST_ACCOUNT_ID));
-        assertEquals(HttpStatus.OK, response.getStatus());
+        final HttpResponse<Object> deleted = client.deleteWatchList(getAuthorizationHeader(), WatchListReactiveController.ACCOUNT_ID);
+        assertEquals(HttpStatus.OK, deleted.getStatus());
         assertTrue(store.getWatchList(TEST_ACCOUNT_ID).getSymbols().isEmpty());
     }
+
+    private String getAuthorizationHeader() {
+        return "Bearer " + givenMyUserLoggedIn().getAccessToken();
+    }
+
+    private BearerAccessRefreshToken givenMyUserLoggedIn() {
+        return client.login(new UsernamePasswordCredentials("my-user", "secret"));
+    }
+
 }

@@ -5,8 +5,11 @@ import com.mherb.mnaut.domain.Greeting;
 import com.mherb.mnaut.service.HelloWorldService;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
+import io.micronaut.security.annotation.Secured;
+import io.micronaut.security.rules.SecurityRule;
 
 @Controller("${hello.controller.path:/hello}")
+@Secured(SecurityRule.IS_ANONYMOUS)
 public class HelloWorldController {
     private final HelloWorldService service;
     private final GreetingConfig config;

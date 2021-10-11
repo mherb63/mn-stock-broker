@@ -4,10 +4,13 @@ import com.mherb.mnaut.domain.InMemoryAccountStore;
 import com.mherb.mnaut.domain.WatchList;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.*;
+import io.micronaut.security.annotation.Secured;
+import io.micronaut.security.rules.SecurityRule;
 
 import java.util.UUID;
 
 @Controller("/account/watchlist")
+@Secured(SecurityRule.IS_AUTHENTICATED)
 public class WatchListController {
 
     public static final UUID ACCOUNT_ID = UUID.randomUUID();

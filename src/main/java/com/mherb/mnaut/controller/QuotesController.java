@@ -8,11 +8,14 @@ import io.micronaut.http.HttpStatus;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.PathVariable;
+import io.micronaut.security.annotation.Secured;
+import io.micronaut.security.rules.SecurityRule;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Optional;
 
 @Controller("/quotes")
+@Secured(SecurityRule.IS_ANONYMOUS)
 @Slf4j
 public class QuotesController {
 
