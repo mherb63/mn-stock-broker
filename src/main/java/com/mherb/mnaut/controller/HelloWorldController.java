@@ -1,6 +1,7 @@
 package com.mherb.mnaut.controller;
 
 import com.mherb.mnaut.configuration.GreetingConfig;
+import com.mherb.mnaut.domain.Greeting;
 import com.mherb.mnaut.service.HelloWorldService;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
@@ -28,5 +29,10 @@ public class HelloWorldController {
     @Get("/en")
     public String greetInEnglish() {
         return config.getEn();
+    }
+
+    @Get("/json")
+    public Greeting json() {
+        return new Greeting();
     }
 }

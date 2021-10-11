@@ -29,7 +29,7 @@ class HelloWorldControllerTest {
     @Test
     void testHelloResponse() {
         final String response = client.toBlocking().retrieve("/hello");
-        assertEquals("Hello from the service layer", response);
+        assertEquals("Hello from HelloWorldService", response);
     }
 
     @Test
@@ -44,4 +44,10 @@ class HelloWorldControllerTest {
         assertEquals("Hello", response);
     }
 
+//    @Test
+//    void testGreetingAsJson() {
+//        final ObjectNode response = client.toBlocking().retrieve("/hello/json", ObjectNode.class);
+//        assertEquals("someJson", response.toString());
+//
+//    }
 }
